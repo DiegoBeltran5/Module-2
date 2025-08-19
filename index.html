@@ -1,65 +1,407 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title> Module 2 solution </title>
-   
-    <!-- custom css -->
-    <link rel="stylesheet" href="css/style.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Periodic Table</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            background: rgba(20, 20, 40, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        #info-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #info-panel h2 {
+            margin: 0 0 15px 0;
+            font-size: 28px;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        #info-panel .property {
+            margin: 8px 0;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #info-panel .property span:first-child {
+            color: #a0a0c0;
+        }
+        #info-panel .property span:last-child {
+            color: #ffffff;
+            font-weight: 500;
+        }
+        #atom-viz {
+            margin-top: 20px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 30, 0.5);
+            border-radius: 10px;
+            position: relative;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-
-
-    <h1 class="background-0"> Our Menu </h1>
-    <p></p>
-
-    <div class="row">
-        <div class="col-lg-1 col-md-1 col-sm-1">
-            <div class="p-section">
-                <h4 class="background-1">
-                    Chicken
-                </h4>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras feugiat ante sed tortor gravida pulvinar.
-                    Ut ultricies nunc ac felis pulvinar fringilla ut nec metus. Cras vitae viverra erat, at accumsan enim.
-                    Mauris sit amet laoreet erat, quis porta tortor. Etiam at nunc sit amet ex eleifend auctor. Proin non justo urna.
-                    Etiam vulputate at ante id cursus.
-                </p>
-            </div>
-
+    <div id="info-panel">
+        <h2 id="element-symbol">--</h2>
+        <div class="property">
+            <span>Name:</span>
+            <span id="element-name">--</span>
         </div>
-
-        <div class="col-lg-2 col-md-2 col-sm-2">
-            <div class="p-section">
-                <h4 class="background-2">
-                    Beef
-                </h4>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras feugiat ante sed tortor gravida pulvinar.
-                    Ut ultricies nunc ac felis pulvinar fringilla ut nec metus. Cras vitae viverra erat, at accumsan enim.
-                    Mauris sit amet laoreet erat, quis porta tortor. Etiam at nunc sit amet ex eleifend auctor. Proin non justo urna.
-                    Etiam vulputate at ante id cursus.
-                </p>
-            </div>
+        <div class="property">
+            <span>Atomic Number:</span>
+            <span id="atomic-number">--</span>
         </div>
-
-        <div class="col-lg-3 col-md-3 col-sm-3">
-            <div class="p-section">
-                <h4 class="background-3">
-                    Sushi
-                </h4>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras feugiat ante sed tortor gravida pulvinar.
-                    Ut ultricies nunc ac felis pulvinar fringilla ut nec metus. Cras vitae viverra erat, at accumsan enim.
-                    Mauris sit amet laoreet erat, quis porta tortor. Etiam at nunc sit amet ex eleifend auctor. Proin non justo urna.
-                    Etiam vulputate at ante id cursus.
-                </p>
-            </div>
+        <div class="property">
+            <span>Atomic Mass:</span>
+            <span id="atomic-mass">--</span>
         </div>
+        <div class="property">
+            <span>Category:</span>
+            <span id="category">--</span>
+        </div>
+        <div class="property">
+            <span>Electron Config:</span>
+            <span id="electron-config">--</span>
+        </div>
+        <div id="atom-viz"></div>
     </div>
-</div>
+
+    <script>
+        // Periodic table data (simplified for demonstration)
+        const elements = [
+            {symbol: 'H', name: 'Hydrogen', number: 1, mass: 1.008, x: 0, y: 0, category: 'nonmetal', config: '1s¹', electrons: [1]},
+            {symbol: 'He', name: 'Helium', number: 2, mass: 4.003, x: 17, y: 0, category: 'noble gas', config: '1s²', electrons: [2]},
+            {symbol: 'Li', name: 'Lithium', number: 3, mass: 6.941, x: 0, y: 1, category: 'alkali metal', config: '[He] 2s¹', electrons: [2, 1]},
+            {symbol: 'Be', name: 'Beryllium', number: 4, mass: 9.012, x: 1, y: 1, category: 'alkaline earth', config: '[He] 2s²', electrons: [2, 2]},
+            {symbol: 'B', name: 'Boron', number: 5, mass: 10.81, x: 12, y: 1, category: 'metalloid', config: '[He] 2s² 2p¹', electrons: [2, 3]},
+            {symbol: 'C', name: 'Carbon', number: 6, mass: 12.01, x: 13, y: 1, category: 'nonmetal', config: '[He] 2s² 2p²', electrons: [2, 4]},
+            {symbol: 'N', name: 'Nitrogen', number: 7, mass: 14.01, x: 14, y: 1, category: 'nonmetal', config: '[He] 2s² 2p³', electrons: [2, 5]},
+            {symbol: 'O', name: 'Oxygen', number: 8, mass: 16.00, x: 15, y: 1, category: 'nonmetal', config: '[He] 2s² 2p⁴', electrons: [2, 6]},
+            {symbol: 'F', name: 'Fluorine', number: 9, mass: 19.00, x: 16, y: 1, category: 'halogen', config: '[He] 2s² 2p⁵', electrons: [2, 7]},
+            {symbol: 'Ne', name: 'Neon', number: 10, mass: 20.18, x: 17, y: 1, category: 'noble gas', config: '[He] 2s² 2p⁶', electrons: [2, 8]},
+            {symbol: 'Na', name: 'Sodium', number: 11, mass: 22.99, x: 0, y: 2, category: 'alkali metal', config: '[Ne] 3s¹', electrons: [2, 8, 1]},
+            {symbol: 'Mg', name: 'Magnesium', number: 12, mass: 24.31, x: 1, y: 2, category: 'alkaline earth', config: '[Ne] 3s²', electrons: [2, 8, 2]},
+            {symbol: 'Al', name: 'Aluminum', number: 13, mass: 26.98, x: 12, y: 2, category: 'metal', config: '[Ne] 3s² 3p¹', electrons: [2, 8, 3]},
+            {symbol: 'Si', name: 'Silicon', number: 14, mass: 28.09, x: 13, y: 2, category: 'metalloid', config: '[Ne] 3s² 3p²', electrons: [2, 8, 4]},
+            {symbol: 'P', name: 'Phosphorus', number: 15, mass: 30.97, x: 14, y: 2, category: 'nonmetal', config: '[Ne] 3s² 3p³', electrons: [2, 8, 5]},
+            {symbol: 'S', name: 'Sulfur', number: 16, mass: 32.07, x: 15, y: 2, category: 'nonmetal', config: '[Ne] 3s² 3p⁴', electrons: [2, 8, 6]},
+            {symbol: 'Cl', name: 'Chlorine', number: 17, mass: 35.45, x: 16, y: 2, category: 'halogen', config: '[Ne] 3s² 3p⁵', electrons: [2, 8, 7]},
+            {symbol: 'Ar', name: 'Argon', number: 18, mass: 39.95, x: 17, y: 2, category: 'noble gas', config: '[Ne] 3s² 3p⁶', electrons: [2, 8, 8]},
+            {symbol: 'K', name: 'Potassium', number: 19, mass: 39.10, x: 0, y: 3, category: 'alkali metal', config: '[Ar] 4s¹', electrons: [2, 8, 8, 1]},
+            {symbol: 'Ca', name: 'Calcium', number: 20, mass: 40.08, x: 1, y: 3, category: 'alkaline earth', config: '[Ar] 4s²', electrons: [2, 8, 8, 2]},
+            {symbol: 'Fe', name: 'Iron', number: 26, mass: 55.85, x: 7, y: 3, category: 'transition metal', config: '[Ar] 3d⁶ 4s²', electrons: [2, 8, 14, 2]},
+            {symbol: 'Cu', name: 'Copper', number: 29, mass: 63.55, x: 10, y: 3, category: 'transition metal', config: '[Ar] 3d¹⁰ 4s¹', electrons: [2, 8, 18, 1]},
+            {symbol: 'Au', name: 'Gold', number: 79, mass: 196.97, x: 10, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s¹', electrons: [2, 8, 18, 32, 18, 1]},
+	    {symbol: 'Sc', name: 'Scandium', number: 21, mass: 44.96, x: 2, y: 3, category: 'transition metal', config: '[Ar] 3d¹ 4s²', electrons: [2, 8, 9, 2]},
+            {symbol: 'Ti', name: 'Titanium', number: 22, mass: 47.87, x: 3, y: 3, category: 'transition metal', config: '[Ar] 3d² 4s²', electrons: [2, 8, 10, 2]},
+            {symbol: 'V', name: 'Vanadium', number: 23, mass: 50.94, x: 4, y: 3, category: 'transition metal', config: '[Ar] 3d³ 4s²', electrons: [2, 8, 11, 2]},
+            {symbol: 'Cr', name: 'Chromium', number: 24, mass: 52.00, x: 5, y: 3, category: 'transition metal', config: '[Ar] 3d⁵ 4s¹', electrons: [2, 8, 13, 1]},
+            {symbol: 'Mn', name: 'Manganese', number: 25, mass: 54.94, x: 6, y: 3, category: 'transition metal', config: '[Ar] 3d⁵ 4s²', electrons: [2, 8, 13, 2]},
+            {symbol: 'Co', name: 'Cobalt', number: 27, mass: 58.93, x: 8, y: 3, category: 'transition metal', config: '[Ar] 3d⁷ 4s²', electrons: [2, 8, 15, 2]},
+            {symbol: 'Ni', name: 'Nickel', number: 28, mass: 58.69, x: 9, y: 3, category: 'transition metal', config: '[Ar] 3d⁸ 4s²', electrons: [2, 8, 16, 2]},
+            {symbol: 'Zn', name: 'Zinc', number: 30, mass: 65.38, x: 11, y: 3, category: 'transition metal', config: '[Ar] 3d¹⁰ 4s²', electrons: [2, 8, 18, 2]},
+            {symbol: 'Ga', name: 'Gallium', number: 31, mass: 69.72, x: 12, y: 3, category: 'metal', config: '[Ar] 3d¹⁰ 4s² 4p¹', electrons: [2, 8, 18, 3]},
+            {symbol: 'Ge', name: 'Germanium', number: 32, mass: 72.63, x: 13, y: 3, category: 'metalloid', config: '[Ar] 3d¹⁰ 4s² 4p²', electrons: [2, 8, 18, 4]},
+            {symbol: 'As', name: 'Arsenic', number: 33, mass: 74.92, x: 14, y: 3, category: 'metalloid', config: '[Ar] 3d¹⁰ 4s² 4p³', electrons: [2, 8, 18, 5]},
+            {symbol: 'Se', name: 'Selenium', number: 34, mass: 78.97, x: 15, y: 3, category: 'nonmetal', config: '[Ar] 3d¹⁰ 4s² 4p⁴', electrons: [2, 8, 18, 6]},
+            {symbol: 'Br', name: 'Bromine', number: 35, mass: 79.90, x: 16, y: 3, category: 'halogen', config: '[Ar] 3d¹⁰ 4s² 4p⁵', electrons: [2, 8, 18, 7]},
+            {symbol: 'Kr', name: 'Krypton', number: 36, mass: 83.80, x: 17, y: 3, category: 'noble gas', config: '[Ar] 3d¹⁰ 4s² 4p⁶', electrons: [2, 8, 18, 8]},
+// --- Período 5 ---
+          {symbol: 'Rb', name: 'Rubidium', number: 37, mass: 85.47, x: 0, y: 4, category: 'alkali metal', config: '[Kr] 5s¹', electrons: [2, 8, 18, 8, 1]},
+          {symbol: 'Sr', name: 'Strontium', number: 38, mass: 87.62, x: 1, y: 4, category: 'alkaline earth', config: '[Kr] 5s²', electrons: [2, 8, 18, 8, 2]},
+          {symbol: 'Y', name: 'Yttrium', number: 39, mass: 88.91, x: 2, y: 4, category: 'transition metal', config: '[Kr] 4d¹ 5s²', electrons: [2, 8, 18, 9, 2]},
+          {symbol: 'Zr', name: 'Zirconium', number: 40, mass: 91.22, x: 3, y: 4, category: 'transition metal', config: '[Kr] 4d² 5s²', electrons: [2, 8, 18, 10, 2]},
+          {symbol: 'Nb', name: 'Niobium', number: 41, mass: 92.91, x: 4, y: 4, category: 'transition metal', config: '[Kr] 4d⁴ 5s¹', electrons: [2, 8, 18, 12, 1]},
+          {symbol: 'Mo', name: 'Molybdenum', number: 42, mass: 95.95, x: 5, y: 4, category: 'transition metal', config: '[Kr] 4d⁵ 5s¹', electrons: [2, 8, 18, 13, 1]},
+          {symbol: 'Tc', name: 'Technetium', number: 43, mass: 98.00, x: 6, y: 4, category: 'transition metal', config: '[Kr] 4d⁵ 5s²', electrons: [2, 8, 18, 13, 2]},
+          {symbol: 'Ru', name: 'Ruthenium', number: 44, mass: 101.07, x: 7, y: 4, category: 'transition metal', config: '[Kr] 4d⁷ 5s¹', electrons: [2, 8, 18, 15, 1]},
+          {symbol: 'Rh', name: 'Rhodium', number: 45, mass: 102.91, x: 8, y: 4, category: 'transition metal', config: '[Kr] 4d⁸ 5s¹', electrons: [2, 8, 18, 16, 1]},
+          {symbol: 'Pd', name: 'Palladium', number: 46, mass: 106.42, x: 9, y: 4, category: 'transition metal', config: '[Kr] 4d¹⁰', electrons: [2, 8, 18, 18]},
+          {symbol: 'Ag', name: 'Silver', number: 47, mass: 107.87, x: 10, y: 4, category: 'transition metal', config: '[Kr] 4d¹⁰ 5s¹', electrons: [2, 8, 18, 18, 1]},
+          {symbol: 'Cd', name: 'Cadmium', number: 48, mass: 112.41, x: 11, y: 4, category: 'transition metal', config: '[Kr] 4d¹⁰ 5s²', electrons: [2, 8, 18, 18, 2]},
+          {symbol: 'In', name: 'Indium', number: 49, mass: 114.82, x: 12, y: 4, category: 'metal', config: '[Kr] 4d¹⁰ 5s² 5p¹', electrons: [2, 8, 18, 18, 3]},
+          {symbol: 'Sn', name: 'Tin', number: 50, mass: 118.71, x: 13, y: 4, category: 'metal', config: '[Kr] 4d¹⁰ 5s² 5p²', electrons: [2, 8, 18, 18, 4]},
+          {symbol: 'Sb', name: 'Antimony', number: 51, mass: 121.76, x: 14, y: 4, category: 'metalloid', config: '[Kr] 4d¹⁰ 5s² 5p³', electrons: [2, 8, 18, 18, 5]},
+          {symbol: 'Te', name: 'Tellurium', number: 52, mass: 127.60, x: 15, y: 4, category: 'metalloid', config: '[Kr] 4d¹⁰ 5s² 5p⁴', electrons: [2, 8, 18, 18, 6]},
+          {symbol: 'I', name: 'Iodine', number: 53, mass: 126.90, x: 16, y: 4, category: 'halogen', config: '[Kr] 4d¹⁰ 5s² 5p⁵', electrons: [2, 8, 18, 18, 7]},
+          {symbol: 'Xe', name: 'Xenon', number: 54, mass: 131.29, x: 17, y: 4, category: 'noble gas', config: '[Kr] 4d¹⁰ 5s² 5p⁶', electrons: [2, 8, 18, 18, 8]},
+// --- Período 6 ---
+         {symbol: 'Cs', name: 'Cesium', number: 55, mass: 132.91, x: 0, y: 5, category: 'alkali metal', config: '[Xe] 6s¹', electrons: [2, 8, 18, 18, 8, 1]},
+         {symbol: 'Ba', name: 'Barium', number: 56, mass: 137.33, x: 1, y: 5, category: 'alkaline earth', config: '[Xe] 6s²', electrons: [2, 8, 18, 18, 8, 2]},
+// (Lantánidos irían aquí en una tabla aparte)
+         {symbol: 'La', name: 'Lanthanum', number: 57, mass: 138.91, x: 2, y: 8, category: 'lanthanide', config: '[Xe] 5d¹ 6s²', electrons: [2, 8, 18, 18, 9, 2]},
+         {symbol: 'Ce', name: 'Cerium', number: 58, mass: 140.12, x: 3, y: 8, category: 'lanthanide', config: '[Xe] 4f¹ 5d¹ 6s²', electrons: [2, 8, 18, 19, 9, 2]},
+         {symbol: 'Nd', name: 'Neodymium', number: 60, mass: 144.24, x: 5, y: 8, category: 'lanthanide', config: '[Xe] 4f⁴ 6s²', electrons: [2, 8, 18, 22, 8, 2]},
+         {symbol: 'Sm', name: 'Samarium', number: 62, mass: 150.36, x: 7, y: 8, category: 'lanthanide', config: '[Xe] 4f⁶ 6s²', electrons: [2, 8, 18, 24, 8, 2]},
+         {symbol: 'Eu', name: 'Europium', number: 63, mass: 151.96, x: 8, y: 8, category: 'lanthanide', config: '[Xe] 4f⁷ 6s²', electrons: [2, 8, 18, 25, 8, 2]},
+         {symbol: 'Gd', name: 'Gadolinium', number: 64, mass: 157.25, x: 9, y: 8, category: 'lanthanide', config: '[Xe] 4f⁷ 5d¹ 6s²', electrons: [2, 8, 18, 25, 9, 2]},
+         {symbol: 'Tb', name: 'Terbium', number: 65, mass: 158.93, x: 10, y: 8, category: 'lanthanide', config: '[Xe] 4f⁹ 6s²', electrons: [2, 8, 18, 27, 8, 2]},
+         {symbol: 'Dy', name: 'Dysprosium', number: 66, mass: 162.50, x: 11, y: 8, category: 'lanthanide', config: '[Xe] 4f¹⁰ 6s²', electrons: [2, 8, 18, 28, 8, 2]},
+         {symbol: 'Er', name: 'Erbium', number: 68, mass: 167.26, x: 13, y: 8, category: 'lanthanide', config: '[Xe] 4f¹² 6s²', electrons: [2, 8, 18, 30, 8, 2]},
+         {symbol: 'Yb', name: 'Ytterbium', number: 70, mass: 173.05, x: 15, y: 8, category: 'lanthanide', config: '[Xe] 4f¹⁴ 6s²', electrons: [2, 8, 18, 32, 8, 2]},
+         {symbol: 'Hf', name: 'Hafnium', number: 72, mass: 178.49, x: 3, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d² 6s²', electrons: [2, 8, 18, 32, 10, 2]},
+         {symbol: 'Ta', name: 'Tantalum', number: 73, mass: 180.95, x: 4, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d³ 6s²', electrons: [2, 8, 18, 32, 11, 2]},
+         {symbol: 'W', name: 'Tungsten', number: 74, mass: 183.84, x: 5, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d⁴ 6s²', electrons: [2, 8, 18, 32, 12, 2]},
+         {symbol: 'Re', name: 'Rhenium', number: 75, mass: 186.21, x: 6, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d⁵ 6s²', electrons: [2, 8, 18, 32, 13, 2]},
+         {symbol: 'Os', name: 'Osmium', number: 76, mass: 190.23, x: 7, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d⁶ 6s²', electrons: [2, 8, 18, 32, 14, 2]},
+         {symbol: 'Ir', name: 'Iridium', number: 77, mass: 192.22, x: 8, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d⁷ 6s²', electrons: [2, 8, 18, 32, 15, 2]},
+         {symbol: 'Pt', name: 'Platinum', number: 78, mass: 195.08, x: 9, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d⁹ 6s¹', electrons: [2, 8, 18, 32, 17, 1]},
+// (Ya tenías el Au aquí)
+         {symbol: 'Hg', name: 'Mercury', number: 80, mass: 200.59, x: 11, y: 5, category: 'transition metal', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s²', electrons: [2, 8, 18, 32, 18, 2]},
+         {symbol: 'Tl', name: 'Thallium', number: 81, mass: 204.38, x: 12, y: 5, category: 'metal', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹', electrons: [2, 8, 18, 32, 18, 3]},
+         {symbol: 'Pb', name: 'Lead', number: 82, mass: 207.2, x: 13, y: 5, category: 'metal', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²', electrons: [2, 8, 18, 32, 18, 4]},
+         {symbol: 'Bi', name: 'Bismuth', number: 83, mass: 208.98, x: 14, y: 5, category: 'metal', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³', electrons: [2, 8, 18, 32, 18, 5]},
+         {symbol: 'Po', name: 'Polonium', number: 84, mass: 209, x: 15, y: 5, category: 'metalloid', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴', electrons: [2, 8, 18, 32, 18, 6]},
+         {symbol: 'At', name: 'Astatine', number: 85, mass: 210, x: 16, y: 5, category: 'halogen', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵', electrons: [2, 8, 18, 32, 18, 7]},
+         {symbol: 'Rn', name: 'Radon', number: 86, mass: 222, x: 17, y: 5, category: 'noble gas', config: '[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶', electrons: [2, 8, 18, 32, 18, 8]}
+
+        ];
+
+        const categoryColors = {
+            'alkali metal': '#ff6b6b',
+            'alkaline earth': '#ff9f43',
+            'transition metal': '#4834d4',
+            'metal': '#686de0',
+            'metalloid': '#30336b',
+            'nonmetal': '#22a6b3',
+            'halogen': '#f0932b',
+            'noble gas': '#eb4d4b',
+            'lanthanide': '#6ab04c',
+            'actinide': '#badc58'
+        };
+
+        let hoveredElement = null;
+        let atomAnimation = null;
+        let particles = [];
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight - 50);
+            textAlign(CENTER, CENTER);
+            
+            // Initialize background particles
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: random(width),
+                    y: random(height),
+                    vx: random(-0.5, 0.5),
+                    vy: random(-0.5, 0.5),
+                    size: random(1, 3)
+                });
+            }
+        }
+
+        function draw() {
+            // Animated gradient background
+            for (let i = 0; i <= height; i++) {
+                let inter = map(i, 0, height, 0, 1);
+                let c = lerpColor(color(30, 30, 50), color(10, 10, 30), inter);
+                stroke(c);
+                line(0, i, width, i);
+            }
+
+            // Draw and update particles
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+                
+                noStroke();
+                fill(255, 255, 255, 20);
+                ellipse(p.x, p.y, p.size * 2);
+            });
+
+            // Calculate cell size and offset
+            const cellWidth = min(width / 20, 60);
+            const cellHeight = min(height / 10, 60);
+            const offsetX = (width - cellWidth * 18) / 2;
+            const offsetY = (height - cellHeight * 7) / 2;
+
+            // Draw periodic table
+            elements.forEach(element => {
+                const x = offsetX + element.x * cellWidth;
+                const y = offsetY + element.y * cellHeight;
+                
+                // Check hover
+                const isHovered = mouseX > x && mouseX < x + cellWidth &&
+                                mouseY > y && mouseY < y + cellHeight;
+                
+                if (isHovered && hoveredElement !== element) {
+                    hoveredElement = element;
+                    showElementInfo(element);
+                    startAtomAnimation(element);
+                }
+                
+                // Draw element cell
+                push();
+                translate(x + cellWidth/2, y + cellHeight/2);
+                
+                // Cell background with hover effect
+                if (isHovered) {
+                    // Glow effect
+                    for (let i = 3; i > 0; i--) {
+                        fill(255, 255, 255, 5);
+                        noStroke();
+                        rect(-cellWidth/2 - i*5, -cellHeight/2 - i*5, 
+                             cellWidth + i*10, cellHeight + i*10, 5);
+                    }
+                    scale(1.1);
+                }
+                
+                // Category color
+                fill(categoryColors[element.category] || '#95a5a6');
+                stroke(255, 255, 255, isHovered ? 100 : 50);
+                strokeWeight(isHovered ? 2 : 1);
+                rect(-cellWidth/2, -cellHeight/2, cellWidth, cellHeight, 5);
+                
+                // Element symbol
+                fill(255);
+                noStroke();
+                textSize(isHovered ? 22 : 18);
+                textStyle(BOLD);
+                text(element.symbol, 0, -5);
+                
+                // Atomic number
+                textSize(10);
+                textStyle(NORMAL);
+                text(element.number, 0, 12);
+                
+                pop();
+            });
+
+            // Check if mouse is not hovering any element
+            let anyHovered = false;
+            elements.forEach(element => {
+                const x = offsetX + element.x * cellWidth;
+                const y = offsetY + element.y * cellHeight;
+                if (mouseX > x && mouseX < x + cellWidth &&
+                    mouseY > y && mouseY < y + cellHeight) {
+                    anyHovered = true;
+                }
+            });
+            
+            if (!anyHovered && hoveredElement) {
+                hoveredElement = null;
+                hideElementInfo();
+                stopAtomAnimation();
+            }
+        }
+
+        function showElementInfo(element) {
+            const panel = document.getElementById('info-panel');
+            document.getElementById('element-symbol').textContent = element.symbol;
+            document.getElementById('element-name').textContent = element.name;
+            document.getElementById('atomic-number').textContent = element.number;
+            document.getElementById('atomic-mass').textContent = element.mass.toFixed(3);
+            document.getElementById('category').textContent = element.category;
+            document.getElementById('electron-config').textContent = element.config;
+            panel.classList.add('visible');
+        }
+
+        function hideElementInfo() {
+            document.getElementById('info-panel').classList.remove('visible');
+        }
+
+        function startAtomAnimation(element) {
+            stopAtomAnimation();
+            
+            const container = document.getElementById('atom-viz');
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 200;
+            container.innerHTML = '';
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            
+            let frame = 0;
+            
+            atomAnimation = setInterval(() => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw nucleus
+                ctx.beginPath();
+                ctx.arc(150, 100, 15, 0, Math.PI * 2);
+                const gradient = ctx.createRadialGradient(150, 100, 0, 150, 100, 15);
+                gradient.addColorStop(0, '#ffd700');
+                gradient.addColorStop(1, '#ff6b6b');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Draw electron shells
+                element.electrons.forEach((count, shell) => {
+                    const radius = 30 + shell * 25;
+                    
+                    // Draw orbit
+                    ctx.beginPath();
+                    ctx.arc(150, 100, radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(100, 150, 255, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Draw electrons
+                    for (let i = 0; i < count; i++) {
+                        const angle = (Math.PI * 2 / count) * i + frame * 0.02 * (shell + 1);
+                        const x = 150 + Math.cos(angle) * radius;
+                        const y = 100 + Math.sin(angle) * radius;
+                        
+                        // Electron glow
+                        ctx.beginPath();
+                        ctx.arc(x, y, 8, 0, Math.PI * 2);
+                        const electronGlow = ctx.createRadialGradient(x, y, 0, x, y, 8);
+                        electronGlow.addColorStop(0, 'rgba(100, 200, 255, 0.8)');
+                        electronGlow.addColorStop(1, 'rgba(100, 200, 255, 0)');
+                        ctx.fillStyle = electronGlow;
+                        ctx.fill();
+                        
+                        // Electron core
+                        ctx.beginPath();
+                        ctx.arc(x, y, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = '#64b5ff';
+                        ctx.fill();
+                    }
+                });
+                
+                frame++;
+            }, 30);
+        }
+
+        function stopAtomAnimation() {
+            if (atomAnimation) {
+                clearInterval(atomAnimation);
+                atomAnimation = null;
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight - 50);
+        }
+    </script>
 </body>
 </html>
